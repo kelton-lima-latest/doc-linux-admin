@@ -9,17 +9,18 @@
 
 1. [Curingas (globbing) no Shell](#1-curingas-globbing-no-shell)  
 2. [Atalhos e comentários no terminal](#2-atalhos-e-comentários-no-terminal)  
-3. [Data e hora](#3-data-e-hora)  
-4. [Disco: espaço, consumo e links](#4-disco-espaço-consumo-e-links)  
-5. [Localização de arquivos e diretórios](#5-localização-de-arquivos-e-diretórios)  
-6. [Memória](#6-memória)  
-7. [Pesquisa de texto](#7-pesquisa-de-texto)  
-8. [Visualização e paginação de arquivos](#8-visualização-e-paginação-de-arquivos)  
-9. [Ordenação de conteúdo](#9-ordenação-de-conteúdo)  
-10. [Tempo de execução e utilitários](#10-tempo-de-execução-e-utilitários)  
-11. [Logs e mensagens do Kernel](#11-logs-e-mensagens-do-kernel)  
-12. [Mensagens entre usuários](#12-mensagens-entre-usuários)  
-13. [Saída de texto](#13-saída-de-texto)
+3. [Privilégios e gerenciamento do sistema](#3-privilégios-e-gerenciamento-do-sistema)  
+4. [Data e hora](#4-data-e-hora)  
+5. [Disco: espaço, consumo e links](#5-disco-espaço-consumo-e-links)  
+6. [Localização de arquivos e diretórios](#6-localização-de-arquivos-e-diretórios)  
+7. [Memória](#7-memória)  
+8. [Pesquisa de texto](#8-pesquisa-de-texto)  
+9. [Visualização e paginação de arquivos](#9-visualização-e-paginação-de-arquivos)  
+10. [Ordenação de conteúdo](#10-ordenação-de-conteúdo)  
+11. [Tempo de execução e utilitários](#11-tempo-de-execução-e-utilitários)  
+12. [Logs e mensagens do Kernel](#12-logs-e-mensagens-do-kernel)  
+13. [Mensagens entre usuários](#13-mensagens-entre-usuários)  
+14. [Saída de texto](#14-saída-de-texto)
 
 ---
 
@@ -91,9 +92,106 @@ ls ?z*    # 1º caractere qualquer, 2º caractere "z", e segue com qualquer cois
   **Obs.:** se você estiver digitando um comando, ao rodar `clear` o texto digitado pode permanecer no prompt (depende do terminal/shell).
 - `#` → comentário (muito usado para documentar comandos grandes, scripts e “pausas” em exemplos)
 
+
 ---
 
-## 3) Data e hora
+## 03) Privilégios e gerenciamento do sistema
+
+### `su` — alterna para outro usuário (inclui root)
+
+- `su` troca para outro usuário e, por padrão, **exige a senha do usuário-alvo** (ex.: senha do `root` quando usado sem usuário).
+- `su -` inicia uma sessão de login, carregando o ambiente do usuário-alvo (mais previsível e, em geral, mais seguro que `su` “puro”).
+
+Exemplos:
+
+```bash
+su -                      # eleva para root e carrega ambiente de login (mais seguro)
+/bin/su -                # força execução do binário correto (útil quando PATH é restrito)
+su - www-data -s /bin/bash # alterna para o usuário www-data usando /bin/bash como shell
+```
+
+> **Atenção:** em ambientes com `sudo` bem configurado, prefira `sudo` (auditoria + menor superfície) em vez de manter sessões longas como root.
+
+### `sudo` — executa comandos com privilégios elevados
+
+- `sudo` permite executar **um comando** com privilégios elevados (conforme regras do `/etc/sudoers`).
+- Ideal para reduzir tempo logado como `root` e manter rastreabilidade (logs).
+
+Exemplos:
+
+```bash
+sudo id                   # executa o comando id com privilégios elevados
+sudo su -                 # inicia sessão como root (evite manter por muito tempo)
+```
+
+### Gerenciar acesso ao grupo `sudo`
+
+```bash
+adduser nome-usuario sudo # adiciona usuário ao grupo sudo
+deluser nome-usuario sudo # remove usuário do grupo sudo
+```
+
+### `id` — informações do usuário e grupos
+
+```bash
+id                        # mostra UID, GID e grupos do usuário atual
+```
+
+### `uname` — informações do sistema e kernel
+
+```bash
+uname                     # nome do sistema operacional
+uname -a                  # vários dados do sistema
+uname -s                  # nome do kernel
+uname -n                  # hostname (nome da máquina)
+uname -r                  # release/versão atual do kernel
+uname -v                  # data/versão de compilação do kernel (varia)
+uname -m                  # arquitetura (ex.: x86_64, aarch64)
+```
+
+### Reiniciar e desligar o sistema
+
+- **Reiniciar (graceful):**
+
+```bash
+reboot                    # reinicia o dispositivo (fluxo de shutdown)
+systemctl reboot          # reinicia via systemd
+shutdown -r now           # reinicia imediatamente
+```
+
+- **Desligar (halt/poweroff):**
+
+```bash
+halt                      # para o sistema (pode não cortar energia em todas as distros)
+systemctl halt            # para o sistema via systemd
+shutdown -h now           # desliga/paralisa imediatamente
+```
+
+- **Agendar e cancelar shutdown:**
+
+```bash
+shutdown -h 22:00         # agenda desligamento para 22:00
+shutdown +10              # desliga em 10 minutos
+shutdown -c               # cancela desligamento agendado
+```
+
+- **Reinício “forçado” (use só em emergência):**
+
+```bash
+reboot -f                 # reinicia bruscamente (pode causar perda de dados)
+```
+
+> **Atenção (alto risco):** os comandos abaixo acionam o *Magic SysRq* (se habilitado) e podem causar perda de dados. Use apenas em cenários controlados/último recurso.
+>
+> ```bash
+> echo b > /proc/sysrq-trigger  # reinicia imediatamente (sem sync/shutdown)
+> echo o > /proc/sysrq-trigger  # desliga imediatamente (sem shutdown)
+> ```
+
+
+---
+
+## 04) Data e hora
 
 ### `date` — configura, exibe ou converte data/hora
 
@@ -132,7 +230,7 @@ hwclock --systohc        # salva o horário do sistema no relógio de hardware (
 
 ---
 
-## 4) Disco: espaço, consumo e links
+## 05) Disco: espaço, consumo e links
 
 ### `df` — espaço livre em partições montadas
 
@@ -163,6 +261,14 @@ du -ms                   # soma total em MB
 du -hc                   # humanizado + total ao final
 ```
 
+### `sync` — grava buffers do kernel no disco
+
+Use para solicitar que o kernel “despeje” buffers pendentes em disco. Pode ser útil antes de operações críticas (ex.: desligamento em ambiente instável).
+
+```bash
+sync
+```
+
 ### `ln` — links (hard e simbólico)
 
 ```bash
@@ -172,7 +278,7 @@ ln -s nome-arquivo nome-link  # cria link simbólico (atalho por caminho)
 
 ---
 
-## 5) Localização de arquivos e diretórios
+## 06) Localização de arquivos e diretórios
 
 ### `find` — localizar arquivos/diretórios
 
@@ -223,7 +329,7 @@ find /dev -type l        # links simbólicos
 
 ---
 
-## 6) Memória
+## 07) Memória
 
 ### `free` — memória física e swap
 
@@ -238,7 +344,7 @@ free -gibi -s 1          # atualiza a cada 1 segundo
 
 ---
 
-## 7) Pesquisa de texto
+## 08) Pesquisa de texto
 
 ### `grep` — pesquisar padrões em arquivos/entrada padrão
 
@@ -265,7 +371,7 @@ grep -irn "$HOST" /etc           # recursivo: mostra número da linha
 
 ---
 
-## 8) Visualização e paginação de arquivos
+## 09) Visualização e paginação de arquivos
 
 ### `head` — primeiras linhas/bytes
 
@@ -305,7 +411,7 @@ q        sai do less
 
 ---
 
-## 9) Ordenação de conteúdo
+## 10) Ordenação de conteúdo
 
 ### `sort` — ordena conteúdo (números e texto)
 
@@ -323,7 +429,7 @@ sort -t ":" -k 2,2 nome-arquivo
 
 ---
 
-## 10) Tempo de execução e utilitários
+## 11) Tempo de execução e utilitários
 
 ### `time` — relatório de tempo de execução
 
@@ -354,7 +460,26 @@ uptime
 
 ---
 
-## 11) Logs e mensagens do Kernel
+### `wc` — conta linhas, palavras e bytes
+
+```bash
+wc nome-arquivo           # linhas, palavras e bytes
+wc -l nome-arquivo        # apenas número de linhas
+wc -c nome-arquivo        # apenas número de bytes
+wc -w nome-arquivo        # apenas número de palavras
+```
+
+### `seq` — imprime sequência de números
+
+```bash
+seq 10                    # 1 a 10
+seq 2 10                  # 2 a 10
+seq 2 2 10                # 2 a 10 incrementando de 2 em 2
+seq -w 100                # alinha com zeros à esquerda (largura baseada no último número)
+```
+
+
+## 12) Logs e mensagens do Kernel
 
 ### `dmesg` — mensagens do ring buffer do kernel
 
@@ -371,7 +496,7 @@ dmesg | grep -i eth0       # filtra mensagens relacionadas (ex.: placa de rede)
 
 ---
 
-## 12) Mensagens entre usuários
+## 13) Mensagens entre usuários
 
 ```bash
 mesg                      # habilita/desabilita receber mensagens (para talk/write)
@@ -380,7 +505,7 @@ talk usuario              # conversa em tempo real (estilo clássico)
 
 ---
 
-## 13) Saída de texto
+## 14) Saída de texto
 
 ### `echo` — exibe mensagem na tela
 
